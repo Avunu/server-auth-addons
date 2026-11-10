@@ -1669,7 +1669,7 @@ provides-extras = ["ldap"]
 
 [[package]]
 name = "odoo-addon-auth-oauth-link-by-email"
-version = "18.0.1.0.0"
+version = "18.0.1.0.0.1"
 source = { editable = "../auth_oauth_link_by_email" }
 dependencies = [
     { name = "odoo" },
@@ -1680,7 +1680,7 @@ requires-dist = [{ name = "odoo", specifier = "==18.0.*" }]
 
 [[package]]
 name = "odoo-addon-auth-oauth-link-by-email-multi-token"
-version = "18.0.1.0.0"
+version = "18.0.1.0.0.1"
 source = { editable = "../auth_oauth_link_by_email_multi_token" }
 dependencies = [
     { name = "odoo" },
