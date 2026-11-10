@@ -89,6 +89,12 @@ packages = []
 # dependency. Maintained from uv.lock (odoo-nix-build-deps).
 [tool.uv.extra-build-dependencies]
 # >>> odoo-nix: sdist build deps (managed) >>>
+"docopt" = ["setuptools"]
+"odoo" = ["setuptools"]
+"ofxparse" = ["setuptools"]
+"python-ldap" = ["setuptools"]
+"rjsmin" = ["setuptools"]
+"vobject" = ["setuptools"]
 # <<< odoo-nix: sdist build deps (managed) <<<
 
 [tool.odoo-nix]
