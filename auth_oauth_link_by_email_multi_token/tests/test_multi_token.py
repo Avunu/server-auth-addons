@@ -11,6 +11,7 @@ class TestLinkByEmailMultiToken(TransactionCase):
         provider = self.env["auth.oauth.provider"].create(
             {
                 "name": "Test provider",
+                "body": "Sign in with Test",
                 "client_id": "test-client",
                 "auth_endpoint": "https://idp.example/auth",
                 "validation_endpoint": "https://idp.example/tokeninfo",

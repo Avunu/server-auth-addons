@@ -1,5 +1,6 @@
 # Copyright 2026 Avunu LLC (avu.nu)
 # License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl.html).
+from odoo.exceptions import AccessDenied
 from odoo.tests import TransactionCase, tagged
 
 GOOGLE_UID = "118000000000000000001"
@@ -13,6 +14,7 @@ class TestLinkByEmail(TransactionCase):
         cls.provider = cls.env["auth.oauth.provider"].create(
             {
                 "name": "Test provider",
+                "body": "Sign in with Test",
                 "client_id": "test-client",
                 "auth_endpoint": "https://idp.example/auth",
                 "validation_endpoint": "https://idp.example/tokeninfo",
@@ -34,14 +36,21 @@ class TestLinkByEmail(TransactionCase):
         return validation
 
     def _signin(self, validation=None, provider=None):
-        # no_user_creation: a sign-in that is not matched returns None instead
-        # of attempting a sign-up.
+        """Return the login, or None when the sign-in is refused.
+
+        no_user_creation makes Odoo return None for a user it cannot match
+        instead of attempting a sign-up. auth_oauth_multi_token, when it is
+        installed, raises AccessDenied for the same case: both are a refusal.
+        """
         Users = self.env["res.users"].with_context(no_user_creation=True)
-        return Users._auth_oauth_signin(
-            (provider or self.provider).id,
-            validation or self._validation(),
-            {"access_token": "token", "state": "{}"},
-        )
+        try:
+            return Users._auth_oauth_signin(
+                (provider or self.provider).id,
+                validation or self._validation(),
+                {"access_token": "token", "state": "{}"},
+            )
+        except AccessDenied:
+            return None
 
     def test_first_signin_links_the_user(self):
         self.assertEqual(self._signin(), "josh@example.com")
