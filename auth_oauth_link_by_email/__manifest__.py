@@ -5,7 +5,7 @@
     "summary": "Any OAuth login whose verified email is an existing user's login "
     "signs in as that user: any number of profiles, from any provider "
     "that has this turned on.",
-    "version": "18.0.1.0.0",
+    "version": "18.0.1.1.0",
     "category": "Technical",
     "author": "Avunu LLC",
     "website": "https://github.com/Avunu/server-auth-addons",
