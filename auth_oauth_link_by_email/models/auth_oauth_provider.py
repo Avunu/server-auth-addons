@@ -8,9 +8,12 @@ class AuthOAuthProvider(models.Model):
 
     link_existing_users_by_email = fields.Boolean(
         string="Link Existing Users by Email",
-        help="On a user's first sign-in with this provider, link the existing "
-        "Odoo user whose login equals the email the provider returns, when the "
-        "provider says that email is verified. Turn this on only for a provider "
-        "that verifies email addresses (Google does): anyone who can obtain a "
-        "verified address from it can sign in as the matching user.",
+        help="Trust this provider: any login it vouches for (a verified email "
+        "equal to an existing user's login) signs in as that user, the first time "
+        "and for as long as the provider is enabled, even if the user already "
+        "signs in with another provider or another account of this one. Every "
+        "profile is kept on the user (OAuth tab) and none replaces another. Turn "
+        "this on only for a provider whose email verification you trust as much "
+        "as you trust your own users' passwords: anyone who can obtain a verified "
+        "address from it can sign in as the matching user.",
     )

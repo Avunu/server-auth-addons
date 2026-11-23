@@ -93,16 +93,67 @@ class TestLinkByEmail(TransactionCase):
         self.assertFalse(self._signin(validation))
         self.assertFalse(self.user.oauth_uid)
 
-    def test_user_with_another_identity_is_not_relinked(self):
+    def test_second_account_of_one_provider_is_linked_too(self):
+        self.assertEqual(self._signin(), "josh@example.com")
+        self.assertEqual(
+            self._signin(self._validation(user_id="second")), "josh@example.com"
+        )
+        self.assertEqual(self.user.oauth_uid, "second")
+        self.assertEqual(
+            sorted(self.user.oauth_identity_ids.mapped("oauth_uid")),
+            sorted([GOOGLE_UID, "second"]),
+        )
+
+    def test_a_second_provider_is_linked_and_the_first_still_signs_in(self):
+        other = self.provider.copy({"name": "Other provider"})
+        self.assertEqual(self._signin(), "josh@example.com")
+        self.assertEqual(
+            self._signin(self._validation(user_id="ms-1"), other), "josh@example.com"
+        )
+        self.assertEqual(self.user.oauth_provider_id, other)
+        # The first provider's profile was kept, and signs in again.
+        self.assertEqual(self._signin(), "josh@example.com")
+        self.assertEqual(self.user.oauth_provider_id, self.provider)
+        self.assertEqual(self.user.oauth_uid, GOOGLE_UID)
+        self.assertEqual(len(self.user.oauth_identity_ids), 2)
+
+    def test_identity_stored_by_hand_is_kept_when_another_is_linked(self):
         self.user.write({"oauth_provider_id": self.provider.id, "oauth_uid": "other"})
-        self.assertFalse(self._signin())
+        self.assertEqual(self._signin(), "josh@example.com")
+        self.assertEqual(self.user.oauth_uid, GOOGLE_UID)
+        self.assertEqual(
+            sorted(self.user.oauth_identity_ids.mapped("oauth_uid")),
+            sorted(["other", GOOGLE_UID]),
+        )
+        self.assertEqual(
+            self._signin(self._validation(user_id="other")), "josh@example.com"
+        )
         self.assertEqual(self.user.oauth_uid, "other")
 
-    def test_user_linked_to_another_provider_is_not_relinked(self):
-        other = self.provider.copy({"name": "Other provider"})
-        self.user.write({"oauth_provider_id": other.id, "oauth_uid": "other"})
-        self.assertFalse(self._signin())
-        self.assertEqual(self.user.oauth_provider_id, other)
+    def test_known_identity_signs_in_even_when_the_provider_is_off(self):
+        self.assertEqual(self._signin(), "josh@example.com")
+        self.provider.link_existing_users_by_email = False
+        self.user.write({"oauth_uid": "other"})
+        self.assertEqual(self._signin(), "josh@example.com")
+        self.assertEqual(self.user.oauth_uid, GOOGLE_UID)
+        self.assertFalse(self._signin(self._validation(user_id="new")))
+
+    def test_identity_follows_its_user_not_the_email(self):
+        self.assertEqual(self._signin(), "josh@example.com")
+        self.user.login = "josh@new.example.com"
+        self.assertEqual(self._signin(), "josh@new.example.com")
+
+    def test_two_users_each_link_by_their_own_email(self):
+        anna = self.env["res.users"].create(
+            {"name": "Anna", "login": "anna@example.com"}
+        )
+        self.assertEqual(self._signin(), "josh@example.com")
+        self.assertEqual(
+            self._signin(self._validation(user_id="anna-1", email="anna@example.com")),
+            "anna@example.com",
+        )
+        self.assertEqual(anna.oauth_uid, "anna-1")
+        self.assertEqual(self.user.oauth_uid, GOOGLE_UID)
 
     def test_inactive_user_is_not_linked(self):
         self.user.active = False
@@ -116,6 +167,7 @@ class TestLinkByEmail(TransactionCase):
         holder.write({"oauth_provider_id": self.provider.id, "oauth_uid": GOOGLE_UID})
         self.assertEqual(self._signin(), "holder@example.com")
         self.assertFalse(self.user.oauth_uid)
+        self.assertEqual(holder.oauth_identity_ids.oauth_uid, GOOGLE_UID)
 
     def test_underscore_is_not_a_wildcard(self):
         self.user.login = "a_b@example.com"

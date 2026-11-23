@@ -35,3 +35,42 @@ class TestLinkByEmailMultiToken(TransactionCase):
         self.assertEqual(
             user.oauth_access_token_ids.mapped("oauth_access_token"), ["token-1"]
         )
+
+    def test_second_provider_links_and_each_records_a_token(self):
+        provider = self.env["auth.oauth.provider"].create(
+            {
+                "name": "Test provider",
+                "body": "Sign in with Test",
+                "client_id": "test-client",
+                "auth_endpoint": "https://idp.example/auth",
+                "validation_endpoint": "https://idp.example/tokeninfo",
+                "enabled": True,
+                "link_existing_users_by_email": True,
+            }
+        )
+        other = provider.copy({"name": "Other provider"})
+        user = self.env["res.users"].create(
+            {"name": "Josh", "login": "josh@example.com", "email": "josh@example.com"}
+        )
+        Users = self.env["res.users"]
+        for prov, uid, token in (
+            (provider, GOOGLE_UID, "token-1"),
+            (other, "ms-1", "token-2"),
+            (provider, GOOGLE_UID, "token-3"),
+        ):
+            validation = {
+                "user_id": uid,
+                "email": "josh@example.com",
+                "email_verified": True,
+            }
+            self.assertEqual(
+                Users._auth_oauth_signin(
+                    prov.id, validation, {"access_token": token, "state": "{}"}
+                ),
+                "josh@example.com",
+            )
+        self.assertEqual(len(user.oauth_identity_ids), 2)
+        self.assertEqual(
+            sorted(user.oauth_access_token_ids.mapped("oauth_access_token")),
+            ["token-1", "token-2", "token-3"],
+        )
